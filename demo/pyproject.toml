@@ -1,0 +1,16 @@
+[project]
+name = "agui-demo"
+version = "0.1.0"
+description = "AG-UI Server and Client Demo with Microsoft Agent Framework"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "agent-framework-ag-ui",
+    "azure-identity",
+    "httpx>=0.28.1",
+    "python-dotenv",
+]
+
+[project.scripts]
+server = "server:main"
+client = "client:main"

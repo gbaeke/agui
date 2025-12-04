@@ -1,0 +1,22 @@
+{
+  "name": "agui-runtime",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "start": "tsx src/server.ts"
+  },
+  "dependencies": {
+    "@ag-ui/client": "^0.0.39",
+    "@ag-ui/langgraph": "^0.0.19",
+    "@copilotkit/runtime": "^1.10.6",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4",
+    "typescript": "~5.8.3"
+  }
+}
