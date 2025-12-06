@@ -1,0 +1,45 @@
+services:
+  # Python AG-UI Server (AI Agent)
+  agui-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    container_name: agui-server
+    ports:
+      - "8888:8888"
+    env_file:
+      - .env
+    volumes:
+      # Mount Azure CLI credentials for local development (read-write for session files)
+      - ~/.azure:/root/.azure
+    networks:
+      - agui-network
+
+  # Node.js Frontend + CopilotKit Runtime (combined)
+  agui-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+      args:
+        # Vite env vars (baked into frontend at build time)
+        VITE_ENTRA_CLIENT_ID: ${VITE_ENTRA_CLIENT_ID}
+        VITE_ENTRA_TENANT_ID: ${VITE_ENTRA_TENANT_ID}
+        VITE_ENTRA_REDIRECT_URI: ${VITE_ENTRA_REDIRECT_URI:-http://localhost:5173}
+        VITE_ENTRA_API_SCOPE: ${VITE_ENTRA_API_SCOPE}
+    container_name: agui-frontend
+    ports:
+      - "5173:3001"
+    env_file:
+      - .env
+    environment:
+      - AGUI_BACKEND_URL=http://agui-server:8888/
+      - NODE_ENV=production
+      - EXTERNAL_PORT=5173
+    depends_on:
+      - agui-server
+    networks:
+      - agui-network
+
+networks:
+  agui-network:
+    driver: bridge

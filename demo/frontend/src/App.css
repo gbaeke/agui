@@ -187,6 +187,46 @@
   border-left-color: #10b981;
 }
 
+/* Story agent styling */
+.story-agent {
+  border-left-color: #8b5cf6;
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+}
+
+.agent-thinking {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #7c3aed;
+  font-style: italic;
+}
+
+.agent-thinking .pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.story-result {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  border: 1px solid #e9d5ff;
+}
+
+.story-text {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: #374151;
+  font-size: 0.9rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
 /* Make sidebar wider */
 :root {
   --copilot-kit-sidebar-width: 400px;

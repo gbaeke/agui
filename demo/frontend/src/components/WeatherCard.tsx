@@ -3,7 +3,16 @@ import { useMemo } from "react";
 interface WeatherCardProps {
   location: string;
   status: "inProgress" | "executing" | "complete";
-  result?: string;
+  result?: string | object;
+}
+
+interface WeatherData {
+  location: string;
+  temperature: number;
+  humidity: number;
+  wind_speed: number;
+  condition: string;
+  error?: string;
 }
 
 // Map weather conditions to icons and colors
@@ -12,20 +21,58 @@ const weatherConfig: Record<string, { icon: string; gradient: string }> = {
   cloudy: { icon: "☁️", gradient: "linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%)" },
   "partly cloudy": { icon: "⛅", gradient: "linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)" },
   rainy: { icon: "🌧️", gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" },
-  windy: { icon: "💨", gradient: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)" },
+  snowy: { icon: "❄️", gradient: "linear-gradient(135deg, #e6e9f0 0%, #eef1f5 100%)" },
+  stormy: { icon: "⛈️", gradient: "linear-gradient(135deg, #373b44 0%, #4286f4 100%)" },
+  foggy: { icon: "🌫️", gradient: "linear-gradient(135deg, #d7d2cc 0%, #304352 100%)" },
   default: { icon: "🌡️", gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
 };
 
-// Parse the weather result string: "Weather in Paris: 22°C, sunny"
-function parseWeatherResult(result: string): { temp: number; condition: string } | null {
-  const match = result.match(/(\d+)°C,\s*(.+)$/);
-  if (match) {
-    return {
-      temp: parseInt(match[1], 10),
-      condition: match[2].toLowerCase().trim(),
-    };
+// Parse the weather result - handles both string and object
+function parseWeatherResult(result: string | object): WeatherData | null {
+  try {
+    // If result is already an object, use it directly
+    let data: Record<string, unknown>;
+    if (typeof result === "object" && result !== null) {
+      data = result as Record<string, unknown>;
+    } else if (typeof result === "string") {
+      // Try to parse as JSON string
+      data = JSON.parse(result);
+    } else {
+      return null;
+    }
+    
+    if (data.error) {
+      return null;
+    }
+    
+    // Validate required fields exist
+    if (typeof data.temperature === "number" && typeof data.condition === "string") {
+      return {
+        location: String(data.location || ""),
+        temperature: data.temperature,
+        humidity: typeof data.humidity === "number" ? data.humidity : 0,
+        wind_speed: typeof data.wind_speed === "number" ? data.wind_speed : 0,
+        condition: data.condition,
+      };
+    }
+    
+    return null;
+  } catch {
+    // Fallback: try to parse old format "Weather in Paris: 22°C, sunny"
+    if (typeof result === "string") {
+      const match = result.match(/Weather in ([^:]+):\s*(\d+)°C,\s*(.+)$/);
+      if (match) {
+        return {
+          location: match[1],
+          temperature: parseInt(match[2], 10),
+          humidity: 0,
+          wind_speed: 0,
+          condition: match[3].toLowerCase().trim(),
+        };
+      }
+    }
+    return null;
   }
-  return null;
 }
 
 export function WeatherCard({ location, status, result }: WeatherCardProps) {
@@ -139,7 +186,7 @@ export function WeatherCard({ location, status, result }: WeatherCardProps) {
                 lineHeight: 1,
               }}
             >
-              {weatherData.temp}°
+              {Math.round(weatherData.temperature)}°
             </div>
             <div style={{ fontSize: "64px" }}>{config.icon}</div>
           </div>
@@ -156,7 +203,7 @@ export function WeatherCard({ location, status, result }: WeatherCardProps) {
             {weatherData.condition}
           </div>
 
-          {/* Decorative footer */}
+          {/* Weather details footer */}
           <div
             style={{
               marginTop: "16px",
@@ -165,17 +212,19 @@ export function WeatherCard({ location, status, result }: WeatherCardProps) {
               display: "flex",
               justifyContent: "space-between",
               fontSize: "13px",
-              opacity: 0.8,
+              opacity: 0.9,
             }}
           >
-            <span>🌡️ Feels like {weatherData.temp}°</span>
-            <span>💧 --</span>
+            <span>💧 {weatherData.humidity}%</span>
+            <span>💨 {weatherData.wind_speed} km/h</span>
           </div>
         </>
       ) : (
         <div style={{ textAlign: "center", padding: "20px 0", color: "#666" }}>
           <p>Unable to parse weather data</p>
-          <p style={{ fontSize: "12px", marginTop: "8px" }}>{result}</p>
+          <p style={{ fontSize: "12px", marginTop: "8px" }}>
+            {typeof result === "string" ? result : JSON.stringify(result)}
+          </p>
         </div>
       )}
     </div>

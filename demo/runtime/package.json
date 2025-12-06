@@ -11,10 +11,14 @@
     "@ag-ui/client": "^0.0.39",
     "@ag-ui/langgraph": "^0.0.19",
     "@copilotkit/runtime": "^1.10.6",
-    "express": "^5.1.0"
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "jwks-rsa": "^3.2.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.15.21",
     "tsx": "^4.19.4",
     "typescript": "~5.8.3"

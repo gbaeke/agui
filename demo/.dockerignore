@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+**/node_modules/
+.venv/
+__pycache__/
+**/__pycache__/
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+
+# Environment files (secrets)
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test files
+*.test.ts
+*.spec.ts
+
+# Python cache
+*.pyc
+.pytest_cache/
+
+# uv lock file not needed in container (using pyproject.toml)
+uv.lock

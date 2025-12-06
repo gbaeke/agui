@@ -63,6 +63,7 @@ dependencies = [
     { name = "agent-framework-ag-ui" },
     { name = "azure-identity" },
     { name = "httpx" },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "python-dotenv" },
 ]
 
@@ -71,6 +72,7 @@ requires-dist = [
     { name = "agent-framework-ag-ui" },
     { name = "azure-identity" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "pyjwt", extras = ["crypto"], specifier = ">=2.10.1" },
     { name = "python-dotenv" },
 ]
 

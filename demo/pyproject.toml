@@ -8,6 +8,7 @@ dependencies = [
     "agent-framework-ag-ui",
     "azure-identity",
     "httpx>=0.28.1",
+    "pyjwt[crypto]>=2.10.1",
     "python-dotenv",
 ]
 
