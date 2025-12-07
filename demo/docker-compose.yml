@@ -2,8 +2,8 @@ services:
   # Python AG-UI Server (AI Agent)
   agui-server:
     build:
-      context: .
-      dockerfile: Dockerfile.python
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: agui-server
     ports:
       - "8888:8888"

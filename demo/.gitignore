@@ -1,15 +1,18 @@
 # Environment
 .env
 .venv/
+backend/.venv/
 
 # Python
 __pycache__/
+backend/__pycache__/
 *.py[cod]
 *$py.class
 *.so
 
 # UV
 .uv/
+backend/.uv/
 
 # IDE
 .vscode/
