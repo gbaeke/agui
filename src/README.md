@@ -31,7 +31,7 @@ A full-stack demo of Microsoft Agent Framework with AG-UI protocol, featuring a 
 ## Project Structure
 
 ```
-demo/
+src/
 ├── .env                  # Environment configuration
 ├── server.py             # Python AG-UI server (backend agent)
 ├── client.py             # CLI client (for testing)
@@ -69,19 +69,19 @@ az login
 
 **Python backend:**
 ```bash
-cd demo
+cd src
 uv sync
 ```
 
 **Node.js runtime:**
 ```bash
-cd demo/runtime
+cd src/runtime
 npm install
 ```
 
 **React frontend:**
 ```bash
-cd demo/frontend
+cd src/frontend
 npm install
 ```
 
@@ -92,21 +92,21 @@ You need **3 terminals** running simultaneously:
 ### Terminal 1: Python AG-UI Server (Port 8888)
 
 ```bash
-cd demo
+cd src
 uv run python server.py
 ```
 
 ### Terminal 2: CopilotKit Runtime (Port 3001)
 
 ```bash
-cd demo/runtime
+cd src/runtime
 npm run dev
 ```
 
 ### Terminal 3: React Frontend (Port 5173)
 
 ```bash
-cd demo/frontend
+cd src/frontend
 npm run dev
 ```
 
@@ -117,7 +117,7 @@ Then open http://localhost:5173 in your browser!
 ### Test with CLI client
 
 ```bash
-cd demo
+cd src
 uv run python client.py
 ```
 

@@ -16,21 +16,21 @@ Start all three components in separate terminals:
 
 ### 1. Python AG-UI Server
 ```bash
-cd demo
+cd src
 uv run python server.py
 ```
 Runs on http://127.0.0.1:8888
 
 ### 2. CopilotKit Runtime
 ```bash
-cd demo/runtime
+cd src/runtime
 npm run dev
 ```
 Runs on http://127.0.0.1:3001
 
 ### 3. React Frontend
 ```bash
-cd demo/frontend
+cd src/frontend
 npm run dev
 ```
 Runs on http://127.0.0.1:5173

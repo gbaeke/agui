@@ -198,8 +198,8 @@ echo "ENTRA_CLIENT_ID=$BACKEND_CLIENT_ID"
 echo "ENTRA_TENANT_ID=$TENANT_ID"
 echo "ENTRA_AUDIENCE=api://$BACKEND_CLIENT_ID"
 
-# Update the demo/.env file
-ENV_FILE="demo/.env"
+# Update the src/.env file
+ENV_FILE="src/.env"
 
 # Remove existing Entra ID configuration if present (to avoid duplicates)
 if [ -f "$ENV_FILE" ]; then
@@ -227,7 +227,7 @@ EOF
 echo -e "\n${GREEN}Configuration added to: $ENV_FILE${NC}"
 
 echo -e "\n${YELLOW}Next Steps:${NC}"
-echo -e "1. Install MSAL packages in frontend: cd demo/frontend && npm install @azure/msal-react @azure/msal-browser"
+echo -e "1. Install MSAL packages in frontend: cd src/frontend && npm install @azure/msal-react @azure/msal-browser"
 echo -e "2. Configure MSAL in your React app"
 echo -e "3. Add token validation to your backend"
 

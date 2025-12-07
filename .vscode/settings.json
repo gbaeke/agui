@@ -1,10 +1,10 @@
 {
-  "python.defaultInterpreterPath": "${workspaceFolder}/demo/backend/.venv/bin/python",
+  "python.defaultInterpreterPath": "${workspaceFolder}/src/backend/.venv/bin/python",
   "python.analysis.extraPaths": [
-    "${workspaceFolder}/demo/backend"
+    "${workspaceFolder}/src/backend"
   ],
   "python.autoComplete.extraPaths": [
-    "${workspaceFolder}/demo/backend"
+    "${workspaceFolder}/src/backend"
   ],
   "search.exclude": {
     "**/node_modules": true
