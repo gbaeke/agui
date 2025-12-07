@@ -5,6 +5,7 @@ import json
 import os
 import httpx
 from dotenv import load_dotenv
+from azure.identity import InteractiveBrowserCredential
 
 # Load environment variables
 load_dotenv()
@@ -21,10 +22,32 @@ DIM = "\033[2m"
 BOLD = "\033[1m"
 
 
+def get_auth_token() -> str | None:
+    """Get authentication token if Entra ID is configured."""
+    tenant_id = os.environ.get("ENTRA_TENANT_ID")
+    client_id = os.environ.get("ENTRA_PYTHON_CLIENT_ID")
+    api_scope = os.environ.get("ENTRA_API_SCOPE")
+    
+    # Skip auth if not configured
+    if not tenant_id or not client_id or not api_scope:
+        return None
+    
+    print(f"{DIM}Authenticating with Entra ID...{RESET}")
+    credential = InteractiveBrowserCredential(
+        tenant_id=tenant_id,
+        client_id=client_id,
+    )
+    
+    token = credential.get_token(api_scope)
+    print(f"{GREEN}✓ Authenticated{RESET}\n")
+    return token.token
+
+
 async def send_message(
     server_url: str, 
     messages: list[dict], 
     thread_id: str | None = None,
+    auth_token: str | None = None,
 ):
     """Send a message and stream the AG-UI response events."""
     
@@ -35,12 +58,17 @@ async def send_message(
     if thread_id:
         payload["thread_id"] = thread_id
     
+    # Build headers
+    headers = {"Accept": "text/event-stream"}
+    if auth_token:
+        headers["Authorization"] = f"Bearer {auth_token}"
+    
     async with httpx.AsyncClient(timeout=120.0) as client:
         async with client.stream(
             "POST",
             server_url,
             json=payload,
-            headers={"Accept": "text/event-stream"},
+            headers=headers,
         ) as response:
             response.raise_for_status()
             
@@ -123,6 +151,9 @@ async def run_client():
     print(f"Server: {server_url}")
     print(f"{DIM}This client shows all AG-UI protocol events including approvals{RESET}\n")
 
+    # Get auth token if configured
+    auth_token = get_auth_token()
+
     # Conversation history
     messages: list[dict] = []
     thread_id = None
@@ -147,7 +178,7 @@ async def run_client():
             
             assistant_content = ""
             
-            async for event in send_message(server_url, messages, thread_id):
+            async for event in send_message(server_url, messages, thread_id, auth_token):
                 event_type = event.get("type", "")
                 
                 # Capture thread_id from first event

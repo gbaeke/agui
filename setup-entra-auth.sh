@@ -134,6 +134,44 @@ if [ -z "$EXISTING_BACKEND" ]; then
 fi
 
 # ======================================
+# Create Python Client App Registration
+# ======================================
+echo -e "\n${YELLOW}Creating Python Client App Registration...${NC}"
+
+# Check if Python client app already exists
+EXISTING_PYTHON=$(az ad app list --display-name "${APP_NAME_PREFIX}-python-client" --query "[0].appId" -o tsv 2>/dev/null || true)
+
+if [ -n "$EXISTING_PYTHON" ]; then
+    echo -e "${YELLOW}App '${APP_NAME_PREFIX}-python-client' already exists with ID: $EXISTING_PYTHON${NC}"
+    echo -e "${YELLOW}Do you want to delete and recreate it? (y/n)${NC}"
+    read -r RECREATE_PYTHON
+    if [ "$RECREATE_PYTHON" = "y" ]; then
+        echo -e "${YELLOW}Deleting existing Python client app...${NC}"
+        az ad app delete --id "$EXISTING_PYTHON"
+        EXISTING_PYTHON=""
+    else
+        PYTHON_CLIENT_ID="$EXISTING_PYTHON"
+    fi
+fi
+
+if [ -z "$EXISTING_PYTHON" ]; then
+    # Create the Python client app registration (public client)
+    PYTHON_CLIENT_ID=$(az ad app create \
+        --display-name "${APP_NAME_PREFIX}-python-client" \
+        --sign-in-audience "AzureADMyOrg" \
+        --public-client-redirect-uris "http://localhost" \
+        --query appId -o tsv)
+
+    echo -e "${GREEN}Created Python client app with Client ID: $PYTHON_CLIENT_ID${NC}"
+
+    # Enable public client flows
+    az ad app update --id "$PYTHON_CLIENT_ID" \
+        --set publicClient="{\"redirectUris\":[\"http://localhost\"]}"
+
+    echo -e "${GREEN}Configured as public client with localhost redirect${NC}"
+fi
+
+# ======================================
 # Grant Frontend permission to Backend API
 # ======================================
 echo -e "\n${YELLOW}Granting frontend app permission to backend API...${NC}"
@@ -169,6 +207,16 @@ az ad app permission add \
 
 echo -e "${GREEN}Added Microsoft Graph User.Read permission${NC}"
 
+# Grant Python client permission to backend API
+echo -e "\n${YELLOW}Granting Python client app permission to backend API...${NC}"
+
+az ad app permission add \
+    --id "$PYTHON_CLIENT_ID" \
+    --api "$BACKEND_CLIENT_ID" \
+    --api-permissions "$SCOPE_ID=Scope" 2>/dev/null || true
+
+echo -e "${GREEN}Added API permission to Python client app${NC}"
+
 # ======================================
 # Output Configuration
 # ======================================
@@ -186,6 +234,10 @@ echo -e "\n${YELLOW}Backend Configuration:${NC}"
 echo -e "  Client ID:     ${GREEN}$BACKEND_CLIENT_ID${NC}"
 echo -e "  API Scope:     ${GREEN}api://$BACKEND_CLIENT_ID/access_as_user${NC}"
 
+echo -e "\n${YELLOW}Python Client Configuration:${NC}"
+echo -e "  Client ID:     ${GREEN}$PYTHON_CLIENT_ID${NC}"
+echo -e "  Redirect URI:  ${GREEN}http://localhost${NC}"
+
 echo -e "\n${YELLOW}Environment Variables (add to .env files):${NC}"
 echo -e "${GREEN}# Frontend (.env)${NC}"
 echo "VITE_ENTRA_CLIENT_ID=$FRONTEND_CLIENT_ID"
@@ -197,6 +249,10 @@ echo -e "\n${GREEN}# Backend (.env)${NC}"
 echo "ENTRA_CLIENT_ID=$BACKEND_CLIENT_ID"
 echo "ENTRA_TENANT_ID=$TENANT_ID"
 echo "ENTRA_AUDIENCE=api://$BACKEND_CLIENT_ID"
+echo ""
+echo "# Python Client (for client_raw.py)"
+echo "ENTRA_PYTHON_CLIENT_ID=$PYTHON_CLIENT_ID"
+echo "ENTRA_API_SCOPE=api://$BACKEND_CLIENT_ID/access_as_user"
 
 # Update the src/.env file
 ENV_FILE="src/.env"
@@ -222,6 +278,10 @@ VITE_ENTRA_API_SCOPE=api://$BACKEND_CLIENT_ID/access_as_user
 ENTRA_CLIENT_ID=$BACKEND_CLIENT_ID
 ENTRA_TENANT_ID=$TENANT_ID
 ENTRA_AUDIENCE=api://$BACKEND_CLIENT_ID
+
+# Python Client Configuration (for client_raw.py)
+ENTRA_PYTHON_CLIENT_ID=$PYTHON_CLIENT_ID
+ENTRA_API_SCOPE=api://$BACKEND_CLIENT_ID/access_as_user
 EOF
 
 echo -e "\n${GREEN}Configuration added to: $ENV_FILE${NC}"
@@ -230,6 +290,8 @@ echo -e "\n${YELLOW}Next Steps:${NC}"
 echo -e "1. Install MSAL packages in frontend: cd src/frontend && npm install @azure/msal-react @azure/msal-browser"
 echo -e "2. Configure MSAL in your React app"
 echo -e "3. Add token validation to your backend"
+echo -e "4. Run client_raw.py - browser will open for authentication"
 
 echo -e "\n${YELLOW}Note:${NC} You may need to grant admin consent for the API permissions."
-echo -e "Run: ${GREEN}az ad app permission admin-consent --id $FRONTEND_CLIENT_ID${NC}"
+echo -e "Frontend: ${GREEN}az ad app permission admin-consent --id $FRONTEND_CLIENT_ID${NC}"
+echo -e "Python Client: ${GREEN}az ad app permission admin-consent --id $PYTHON_CLIENT_ID${NC}"
