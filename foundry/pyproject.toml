@@ -1,0 +1,10 @@
+[project]
+name = "foundry-kb-query"
+version = "0.1.0"
+description = "Query Azure AI Foundry Knowledge Base"
+requires-python = ">=3.10"
+dependencies = [
+    "azure-search-documents>=11.7.0b2",
+    "azure-identity>=1.19.0",
+    "rich>=13.0.0",
+]

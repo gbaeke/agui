@@ -1,0 +1,39 @@
+# Environment
+.env
+.venv/
+backend/.venv/
+
+# Python
+__pycache__/
+backend/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# UV
+.uv/
+backend/.uv/
+
+# IDE
+.vscode/
+.idea/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# React/Vite build output
+dist/
+build/
+*.local
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
