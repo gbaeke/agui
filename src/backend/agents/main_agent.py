@@ -5,7 +5,7 @@ from agent_framework.azure import AzureOpenAIChatClient
 from azure.identity import DefaultAzureCredential
 
 from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT_NAME
-from tools import get_weather, get_current_time, calculate, bedtime_story_tool, get_quote
+from tools import get_weather, get_current_time, calculate, bedtime_story_tool, get_quote, a2a_consult
 from .middleware import tool_logging_middleware
 
 # Create Azure OpenAI chat client
@@ -44,8 +44,12 @@ For INSPIRATIONAL QUOTES:
 - Call get_quote ONCE
 - Share the wisdom with the user
 
+For A2A (TWO-AGENT COLLABORATION):
+- If the user asks to "have two agents discuss" / "debate" / "get a second opinion", call a2a_consult ONCE
+- Provide the final improved answer (and optionally summarize key critique)
+
 NEVER call a tool more than once per request.""",
     chat_client=chat_client,
-    tools=[get_weather, get_current_time, calculate, bedtime_story_tool, get_quote],
+    tools=[get_weather, get_current_time, calculate, bedtime_story_tool, get_quote, a2a_consult],
     middleware=[tool_logging_middleware],
 )
