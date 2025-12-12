@@ -5,7 +5,7 @@ from agent_framework.azure import AzureOpenAIChatClient
 from azure.identity import DefaultAzureCredential
 
 from config import AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT_NAME
-from tools import get_weather, get_current_time, calculate, bedtime_story_tool
+from tools import get_weather, get_current_time, calculate, bedtime_story_tool, get_quote
 from .middleware import tool_logging_middleware
 
 # Create Azure OpenAI chat client
@@ -40,8 +40,12 @@ For BEDTIME STORIES:
 - Call tell_bedtime_story ONCE
 - Let the story speak for itself
 
+For INSPIRATIONAL QUOTES:
+- Call get_quote ONCE
+- Share the wisdom with the user
+
 NEVER call a tool more than once per request.""",
     chat_client=chat_client,
-    tools=[get_weather, get_current_time, calculate, bedtime_story_tool],
+    tools=[get_weather, get_current_time, calculate, bedtime_story_tool, get_quote],
     middleware=[tool_logging_middleware],
 )

@@ -4,6 +4,7 @@ import "@copilotkit/react-ui/styles.css";
 import "./App.css";
 import { WeatherCard } from "./components/WeatherCard";
 import { ClockCard } from "./components/ClockCard";
+import { QuoteCard } from "./components/QuoteCard";
 import { useAuth, useAccessToken } from "./useAuth";
 
 // Login screen component
@@ -269,6 +270,19 @@ function ToolRenderers() {
           )}
         </div>
       </div>
+    ),
+  });
+
+  // Render quote of the day
+  useCopilotAction({
+    name: "get_quote",
+    available: "disabled",
+    parameters: [],
+    render: ({ status, result }) => (
+      <QuoteCard
+        status={status}
+        result={result}
+      />
     ),
   });
 
