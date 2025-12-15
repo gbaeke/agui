@@ -3,6 +3,9 @@ import { loginRequest, apiRequest } from "./authConfig";
 import { InteractionStatus, InteractionRequiredAuthError } from "@azure/msal-browser";
 import { useCallback, useEffect, useState } from "react";
 
+// Check if auth should be disabled (for testing)
+const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
+
 // Hook to get access token for API calls
 // Following Microsoft best practices: acquire token on-demand, handle InteractionRequiredAuthError specifically
 export function useAccessToken() {
@@ -80,9 +83,16 @@ export function useAccessToken() {
 // Hook for authentication actions
 export function useAuth() {
   const { instance, accounts, inProgress } = useMsal();
-  const isAuthenticated = useIsAuthenticated();
+  const isAuthenticatedMsal = useIsAuthenticated();
+  
+  // If auth is skipped, always return authenticated
+  const isAuthenticated = SKIP_AUTH ? true : isAuthenticatedMsal;
 
   const login = useCallback(async () => {
+    if (SKIP_AUTH) {
+      console.log("Auth skipped - test mode enabled");
+      return;
+    }
     try {
       await instance.loginPopup(loginRequest);
     } catch (error) {
@@ -91,6 +101,10 @@ export function useAuth() {
   }, [instance]);
 
   const logout = useCallback(async () => {
+    if (SKIP_AUTH) {
+      console.log("Auth skipped - test mode enabled");
+      return;
+    }
     try {
       await instance.logoutPopup({
         postLogoutRedirectUri: window.location.origin,
@@ -101,7 +115,7 @@ export function useAuth() {
   }, [instance]);
 
   const user = accounts[0] || null;
-  const isLoading = inProgress !== InteractionStatus.None;
+  const isLoading = SKIP_AUTH ? false : inProgress !== InteractionStatus.None;
 
   return {
     isAuthenticated,
@@ -109,7 +123,7 @@ export function useAuth() {
     user,
     login,
     logout,
-    username: user?.username || user?.name || null,
-    name: user?.name || user?.username || null,
+    username: SKIP_AUTH ? "Test User" : (user?.username || user?.name || null),
+    name: SKIP_AUTH ? "Test User" : (user?.name || user?.username || null),
   };
 }

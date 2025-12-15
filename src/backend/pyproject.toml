@@ -7,6 +7,7 @@ requires-python = ">=3.10"
 dependencies = [
     "agent-framework-ag-ui",
     "azure-identity",
+    "azure-search-documents",
     "httpx>=0.28.1",
     "pyjwt[crypto]>=2.10.1",
     "python-dotenv",

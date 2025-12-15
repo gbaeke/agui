@@ -4,6 +4,9 @@ import "@copilotkit/react-ui/styles.css";
 import "./App.css";
 import { WeatherCard } from "./components/WeatherCard";
 import { ClockCard } from "./components/ClockCard";
+import { QuoteCard } from "./components/QuoteCard";
+import { A2ACard } from "./components/A2ACard";
+import { CatalogSearchCard } from "./components/CatalogSearchCard";
 import { useAuth, useAccessToken } from "./useAuth";
 
 // Login screen component
@@ -269,6 +272,45 @@ function ToolRenderers() {
           )}
         </div>
       </div>
+    ),
+  });
+
+  // Render quote of the day
+  useCopilotAction({
+    name: "get_quote",
+    available: "disabled",
+    parameters: [],
+    render: ({ status, result }) => (
+      <QuoteCard
+        status={status}
+        result={result}
+      />
+    ),
+  });
+
+  // Render A2A collaboration tool
+  useCopilotAction({
+    name: "a2a_consult",
+    available: "disabled",
+    parameters: [
+      { name: "question", type: "string", description: "The question to discuss" },
+      { name: "goal", type: "string", description: "Optional goal for the response" },
+    ],
+    render: ({ status, result }) => (
+      <A2ACard status={status} result={result} />
+    ),
+  });
+
+  // Render product catalog search
+  useCopilotAction({
+    name: "search_catalog",
+    available: "disabled",
+    parameters: [
+      { name: "query", type: "string", description: "Search query" },
+      { name: "top", type: "number", description: "How many results to return" },
+    ],
+    render: ({ status, result }) => (
+      <CatalogSearchCard status={status} result={result} />
     ),
   });
 

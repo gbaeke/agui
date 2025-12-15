@@ -32,7 +32,7 @@ GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
 # Start backend with unbuffered output and auto-reload
-(cd backend && PYTHONUNBUFFERED=1 uv run python -m uvicorn server:app --host 127.0.0.1 --port 8888 --reload 2>&1 | prefix_output "BACKEND" "$BLUE") &
+(cd backend && PYTHONUNBUFFERED=1 ~/.local/bin/uv run python -m uvicorn server:app --host 127.0.0.1 --port 8888 --reload 2>&1 | prefix_output "BACKEND" "$BLUE") &
 
 # Start runtime
 (cd runtime && npm run dev 2>&1 | prefix_output "RUNTIME" "$MAGENTA") &
