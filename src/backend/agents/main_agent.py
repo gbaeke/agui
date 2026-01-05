@@ -34,9 +34,10 @@ When the user asks for TIME:
 - The UI shows a visual clock
 
 When the user asks for WEATHER:
-- Call get_weather ONCE  
-- Add a brief friendly comment about the weather
-- The UI shows a visual weather card
+ - First call approve_weather_request ONCE with the location you intend to use
+ - If the result indicates approval, then call get_weather ONCE
+ - If not approved, do NOT call get_weather; respond that you won't fetch weather
+ - The UI shows a visual weather card
 
 For CALCULATIONS:
 - Call calculate ONCE

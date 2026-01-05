@@ -1,4 +1,4 @@
-import { CopilotKit, useRenderToolCall } from "@copilotkit/react-core";
+import { CopilotKit, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import "./App.css";
@@ -246,6 +246,65 @@ function App() {
 
 // Component to render tool calls in the chat
 function ToolRenderers() {
+  // Require human approval before fetching weather
+  useHumanInTheLoop({
+    name: "approve_weather_request",
+    description: "Ask the user to approve fetching weather for a given location before calling get_weather.",
+    parameters: [
+      { name: "location", type: "string", description: "The location to fetch weather for", required: true },
+    ],
+    render: ({ args, respond }) => {
+      if (!respond) return <></>;
+
+      const location = args.location || "(unknown location)";
+
+      return (
+        <div className="tool-card story-agent">
+          <div className="tool-header">
+            <span className="tool-icon">✅</span>
+            <span className="tool-name">Approve weather lookup</span>
+            <span className="tool-status executing">⏳</span>
+          </div>
+          <div className="tool-body">
+            <p>
+              Fetch weather for: <strong>{location}</strong>?
+            </p>
+            <div style={{ display: "flex", gap: "12px", marginTop: "12px" }}>
+              <button
+                onClick={() => respond({ approved: false })}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #ddd",
+                  background: "white",
+                  cursor: "pointer",
+                }}
+              >
+                Deny
+              </button>
+              <button
+                onClick={() => respond({ approved: true })}
+                style={{
+                  flex: 1,
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#667eea",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  });
+
   // Render weather tool calls with nice weather card
   useRenderToolCall({
     name: "get_weather",
