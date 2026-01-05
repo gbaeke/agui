@@ -24,6 +24,11 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// CopilotKit sends JSON payloads to the runtime endpoint. Parsing JSON here ensures
+// req.body is available even if the request stream is already ended/consumed, which
+// allows @copilotkit/runtime to safely reconstruct the Request body.
+app.use(express.json({ limit: "10mb" }));
+
 // AG-UI backend URL (Python server)
 const AGUI_BACKEND_URL = process.env.AGUI_BACKEND_URL || "http://127.0.0.1:8888/";
 
@@ -105,11 +110,33 @@ async function validateToken(req: Request, res: Response, next: NextFunction): P
 const serviceAdapter = new ExperimentalEmptyAdapter();
 
 // Handle CopilotKit requests with token validation
-app.use("/api/copilotkit", validateToken, (req, res, next) => {
-  console.log(`[${new Date().toISOString()}] Incoming request to /api/copilotkit`);
+// Note: CopilotKit fetches runtime metadata from GET {runtimeUrl}/info during initialization.
+// That request may not include custom headers, so we must not require auth for /info.
+app.use(
+  "/api/copilotkit",
+  (req, res, next) => {
+    const originalUrl = req.originalUrl || "";
+    const isInfoRequest = req.path === "/info" || /^\/api\/copilotkit\/info\/?$/.test(originalUrl);
+
+    if (req.method === "OPTIONS" || isInfoRequest) {
+      next();
+      return;
+    }
+    validateToken(req, res, next).catch(next);
+  },
+  (req, res, next) => {
+  console.log(
+    `[${new Date().toISOString()}] Incoming ${req.method} request to ${req.originalUrl || req.url}`,
+  );
   
   // Get the Authorization header to forward to the backend
-  const authHeader = req.headers.authorization;
+  const rawAuthHeader = req.headers.authorization;
+  const authHeader = (() => {
+    if (!rawAuthHeader) return undefined;
+    const value = Array.isArray(rawAuthHeader) ? rawAuthHeader[0] : rawAuthHeader;
+    // Be defensive: only forward the first value if a list is present.
+    return value.split(",", 1)[0].trim();
+  })();
   
   (async () => {
     // Create the CopilotRuntime inside the handler (per the docs)
@@ -131,7 +158,8 @@ app.use("/api/copilotkit", validateToken, (req, res, next) => {
 
     return handler(req, res);
   })().catch(next);
-});
+  }
+);
 
 // Health check
 app.get("/health", (_, res) => {

@@ -10,7 +10,7 @@
   "dependencies": {
     "@ag-ui/client": "^0.0.39",
     "@ag-ui/langgraph": "^0.0.19",
-    "@copilotkit/runtime": "^1.10.6",
+    "@copilotkit/runtime": "^1.50.1",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.3",

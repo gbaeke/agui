@@ -27,6 +27,9 @@ async def authentication_middleware(request, call_next):
         )
     
     token = authorization[7:]  # Remove "Bearer " prefix
+    # Some proxies/libraries can append extra values (e.g., ", ...").
+    # Only keep the first token-like value.
+    token = token.strip().split(",", 1)[0].strip().split(" ", 1)[0].strip()
     
     try:
         await validate_token(token)

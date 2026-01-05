@@ -134,11 +134,41 @@ function UserHeader() {
 function AuthenticatedChat() {
   const { accessToken } = useAccessToken();
 
+  // CopilotKit will call {runtimeUrl}/info on initialization. In practice that can happen
+  // before we have an API access token available, which would fail auth and prevent
+  // agent discovery. Keep the UI simple: wait until we have a token.
+  if (!accessToken) {
+    return (
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "#f5f5f5",
+        padding: "20px",
+        boxSizing: "border-box",
+      }}>
+        <div style={{
+          width: "100%",
+          maxWidth: "700px",
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 4px 24px rgba(0, 0, 0, 0.1)",
+          background: "white",
+        }}>
+          <UserHeader />
+          <div style={{ padding: "20px", color: "#333" }}>Acquiring API token…</div>
+        </div>
+      </div>
+    );
+  }
+
   // Build headers with the access token
-  const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
+  const headers = { Authorization: `Bearer ${accessToken}` };
 
   return (
-    <CopilotKit 
+    <CopilotKit
+      key={accessToken}
       runtimeUrl="/api/copilotkit" 
       agent="agui_assistant" 
       showDevConsole={false}

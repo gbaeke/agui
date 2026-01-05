@@ -8,9 +8,17 @@ from fastapi import HTTPException
 from config import ENTRA_TENANT_ID, JWKS_CACHE_DURATION, TOKEN_REPLAY_CACHE_MAX_SIZE
 from utils import logger
 
+# Prefer PyJWT's built-in JWKS client for key selection. It handles fetching
+# and picking the correct key for a given JWT (kid) reliably.
+from jwt import PyJWKClient
+
 # Cache for JWKS keys
 _jwks_cache: dict = {}
 _jwks_cache_time: float = 0
+
+# Cache PyJWKClient instance
+_jwk_client: PyJWKClient | None = None
+_jwk_client_tenant: str = ""
 
 # Token replay prevention cache (stores token IDs with expiration)
 # In production, use Redis or similar distributed cache
@@ -28,6 +36,7 @@ async def get_jwks_keys() -> dict:
     
     async with httpx.AsyncClient(timeout=10.0) as client:
         response = await client.get(jwks_url)
+        response.raise_for_status()
         _jwks_cache = response.json()
         _jwks_cache_time = time.time()
         logger.info("Fetched JWKS keys from Microsoft")
@@ -36,22 +45,19 @@ async def get_jwks_keys() -> dict:
 
 async def get_signing_key(token: str) -> str:
     """Get the signing key for a token from JWKS."""
-    # Decode header without verification to get kid
-    unverified_header = jwt.get_unverified_header(token)
-    kid = unverified_header.get("kid")
-    
-    if not kid:
-        raise ValueError("Token missing 'kid' header")
-    
-    jwks = await get_jwks_keys()
-    
-    for key in jwks.get("keys", []):
-        if key.get("kid") == kid:
-            # Convert JWK to PEM
-            from jwt.algorithms import RSAAlgorithm
-            return RSAAlgorithm.from_jwk(key)
-    
-    raise ValueError(f"Unable to find signing key for kid: {kid}")
+    global _jwk_client, _jwk_client_tenant
+
+    if not ENTRA_TENANT_ID:
+        raise ValueError("ENTRA_TENANT_ID is not configured")
+
+    jwks_url = f"https://login.microsoftonline.com/{ENTRA_TENANT_ID}/discovery/v2.0/keys"
+
+    if _jwk_client is None or _jwk_client_tenant != ENTRA_TENANT_ID:
+        _jwk_client = PyJWKClient(jwks_url, cache_keys=True, timeout=10)
+        _jwk_client_tenant = ENTRA_TENANT_ID
+
+    signing_key = _jwk_client.get_signing_key_from_jwt(token).key
+    return signing_key
 
 
 def _check_token_replay(jti: str, exp: float) -> None:
@@ -81,16 +87,26 @@ async def validate_token(token: str) -> dict:
     
     try:
         signing_key = await get_signing_key(token)
-        
+
+        def _decode_with_key(key):
+            return jwt.decode(
+                token,
+                key,
+                algorithms=["RS256"],
+                audience=ENTRA_AUDIENCE,
+                issuer=f"https://sts.windows.net/{ENTRA_TENANT_ID}/",
+                leeway=60,  # 60 seconds tolerance for clock skew
+            )
+
         # Verify the token with clock skew tolerance
-        claims = jwt.decode(
-            token,
-            signing_key,
-            algorithms=["RS256"],
-            audience=ENTRA_AUDIENCE,
-            issuer=f"https://sts.windows.net/{ENTRA_TENANT_ID}/",
-            leeway=60,  # 60 seconds tolerance for clock skew
-        )
+        try:
+            claims = _decode_with_key(signing_key)
+        except jwt.InvalidSignatureError:
+            # Keys can rotate; rebuild the JWK client once and retry.
+            global _jwk_client
+            _jwk_client = None
+            signing_key = await get_signing_key(token)
+            claims = _decode_with_key(signing_key)
         
         # Validate nbf (not before) claim if present
         if "nbf" in claims:
