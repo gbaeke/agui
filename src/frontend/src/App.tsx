@@ -1,4 +1,4 @@
-import { CopilotKit, useCopilotAction } from "@copilotkit/react-core";
+import { CopilotKit, useRenderToolCall } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import "@copilotkit/react-ui/styles.css";
 import "./App.css";
@@ -247,9 +247,8 @@ function App() {
 // Component to render tool calls in the chat
 function ToolRenderers() {
   // Render weather tool calls with nice weather card
-  useCopilotAction({
+  useRenderToolCall({
     name: "get_weather",
-    available: "disabled", // This is render-only, backend handles execution
     parameters: [
       { name: "location", type: "string", description: "The location to get weather for" }
     ],
@@ -263,9 +262,8 @@ function ToolRenderers() {
   });
 
   // Render time tool calls with clock card
-  useCopilotAction({
+  useRenderToolCall({
     name: "get_current_time",
-    available: "disabled",
     parameters: [],
     render: ({ status, result }) => (
       <ClockCard
@@ -276,9 +274,8 @@ function ToolRenderers() {
   });
 
   // Render calculator tool calls
-  useCopilotAction({
+  useRenderToolCall({
     name: "calculate",
-    available: "disabled",
     parameters: [
       { name: "expression", type: "string", description: "The math expression to calculate" }
     ],
@@ -303,9 +300,8 @@ function ToolRenderers() {
   });
 
   // Render bedtime story sub-agent invocation
-  useCopilotAction({
+  useRenderToolCall({
     name: "tell_bedtime_story",
-    available: "disabled",
     parameters: [
       { name: "theme", type: "string", description: "The theme for the bedtime story" }
     ],

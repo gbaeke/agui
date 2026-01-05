@@ -15,6 +15,12 @@ chat_client = AzureOpenAIChatClient(
     deployment_name=AZURE_OPENAI_DEPLOYMENT_NAME,
 )
 
+# Prevent runaway tool-call loops. Agent Framework's default allows many tool iterations
+# per single user request; if the model misbehaves, it can repeatedly invoke the same
+# tool. We expect at most one tool call + (optionally) one follow-up assistant message.
+if chat_client.function_invocation_configuration is not None:
+    chat_client.function_invocation_configuration.max_iterations = 2
+
 # Create the AI agent with tools
 agent = ChatAgent(
     name="AGUIAssistant",
@@ -38,7 +44,7 @@ For CALCULATIONS:
 
 For BEDTIME STORIES:
 - Call tell_bedtime_story ONCE
-- Let the story speak for itself
+- Then reply with a short closing line like: "Sweet dreams." (do NOT call any tool again)
 
 NEVER call a tool more than once per request.""",
     chat_client=chat_client,
