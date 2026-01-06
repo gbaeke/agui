@@ -1,4 +1,4 @@
-import { CopilotKit, useCoAgent, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
+import { CopilotKit, useCoAgent, useFrontendTool, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { useEffect, useState } from "react";
 import "@copilotkit/react-ui/styles.css";
@@ -243,7 +243,7 @@ function AuthenticatedChat() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        background: "#f5f5f5",
+        background: "var(--app-bg)",
         padding: "20px",
         boxSizing: "border-box",
       }}>
@@ -312,7 +312,7 @@ function AuthenticatedChat() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        background: "#f5f5f5",
+        background: "var(--app-bg)",
         padding: "20px",
         boxSizing: "border-box",
       }}>
@@ -357,7 +357,7 @@ function AuthenticatedChat() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        background: "#f5f5f5",
+        background: "var(--app-bg)",
         padding: "20px",
         boxSizing: "border-box",
       }}>
@@ -423,6 +423,25 @@ function App() {
 
 // Component to render tool calls in the chat
 function ToolRenderers() {
+  // Frontend tool: allow the agent to change the web app background color.
+  // This executes in the browser only.
+  useFrontendTool({
+    name: "set_background_color",
+    description: "Set the background color of the web app (CSS color string).",
+    parameters: [
+      { name: "color", type: "string", description: "CSS color value (e.g., '#111827', 'white', 'rgb(0,0,0)')", required: true },
+    ],
+    handler: ({ color }) => {
+      const safeColor = typeof color === "string" ? color.trim() : "";
+      if (!safeColor) {
+        return { ok: false, error: "Missing color" };
+      }
+
+      document.documentElement.style.setProperty("--app-bg", safeColor);
+      return { ok: true, color: safeColor };
+    },
+  });
+
   // Require human approval before fetching weather
   useHumanInTheLoop({
     name: "approve_weather_request",

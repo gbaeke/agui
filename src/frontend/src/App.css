@@ -338,4 +338,5 @@
 /* Make sidebar wider */
 :root {
   --copilot-kit-sidebar-width: 400px;
+  --app-bg: #f5f5f5;
 }

@@ -55,6 +55,10 @@ When the user asks for WEATHER:
  - If not approved, do NOT call get_weather; respond that you won't fetch weather
  - The UI shows a visual weather card
 
+When the user asks to CHANGE THE APP BACKGROUND COLOR:
+- Call set_background_color ONCE with the requested CSS color
+- Then respond briefly (no extra explanation)
+
 For CALCULATIONS:
 - Call calculate ONCE
 - Explain the result
