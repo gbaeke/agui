@@ -1,6 +1,6 @@
 import { CopilotKit, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "@copilotkit/react-ui/styles.css";
 import "./App.css";
 import { WeatherCard } from "./components/WeatherCard";
@@ -134,6 +134,8 @@ function UserHeader() {
 // Main chat component (only shown when authenticated)
 function AuthenticatedChat() {
   const { accessToken, acquireToken } = useAccessToken();
+  const { login } = useAuth();
+  const [authError, setAuthError] = useState(false);
 
   // Acquire token on-demand when this authenticated experience is mounted.
   // Avoid periodic refresh to reduce background traffic.
@@ -142,6 +144,72 @@ function AuthenticatedChat() {
       acquireToken();
     }
   }, [accessToken, acquireToken]);
+
+  if (authError) {
+    return (
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        background: "#f5f5f5",
+        padding: "20px",
+        boxSizing: "border-box",
+      }}>
+        <div style={{
+          width: "100%",
+          maxWidth: "700px",
+          borderRadius: "16px",
+          overflow: "hidden",
+          boxShadow: "0 4px 24px rgba(0, 0, 0, 0.1)",
+          background: "white",
+        }}>
+          <UserHeader />
+          <div style={{ padding: "20px", color: "#333" }}>
+            <div style={{ fontWeight: 600, marginBottom: "8px" }}>Authentication problem</div>
+            <div style={{ marginBottom: "16px" }}>
+              The server rejected your token (expired/invalid). Please sign in again.
+            </div>
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                onClick={async () => {
+                  setAuthError(false);
+                  await acquireToken();
+                }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #ddd",
+                  background: "white",
+                  cursor: "pointer",
+                }}
+              >
+                Retry
+              </button>
+              <button
+                onClick={async () => {
+                  setAuthError(false);
+                  await login();
+                  await acquireToken();
+                }}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "8px",
+                  border: "none",
+                  background: "#667eea",
+                  color: "white",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Sign in again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // CopilotKit will call {runtimeUrl}/info on initialization. In practice that can happen
   // before we have an API access token available, which would fail auth and prevent
@@ -181,6 +249,17 @@ function AuthenticatedChat() {
       agent="agui_assistant" 
       showDevConsole={false}
       headers={headers}
+      onError={(errorEvent: any) => {
+        const message =
+          (typeof errorEvent?.error?.message === "string" && errorEvent.error.message) ||
+          (typeof errorEvent?.error === "string" && errorEvent.error) ||
+          "";
+
+        // Best-effort detection: if the runtime/backend responds 401/403, CopilotKit will surface an error.
+        if (/\b401\b/.test(message) || /\b403\b/.test(message) || /unauthorized/i.test(message)) {
+          setAuthError(true);
+        }
+      }}
     >
       <div style={{
         display: "flex",

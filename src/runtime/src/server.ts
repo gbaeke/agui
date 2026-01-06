@@ -109,6 +109,27 @@ async function validateToken(req: Request, res: Response, next: NextFunction): P
 // Create the service adapter (empty since we're using AG-UI agent)
 const serviceAdapter = new ExperimentalEmptyAdapter();
 
+function extractHttpStatus(error: unknown): number | undefined {
+  const err = error as any;
+  const candidates = [
+    err?.status,
+    err?.statusCode,
+    err?.response?.status,
+    err?.response?.statusCode,
+    err?.cause?.status,
+    err?.cause?.statusCode,
+    err?.cause?.response?.status,
+    err?.cause?.response?.statusCode,
+  ];
+  for (const value of candidates) {
+    if (typeof value === "number") return value;
+  }
+  const message = typeof err?.message === "string" ? err.message : "";
+  if (/\b401\b/.test(message)) return 401;
+  if (/\b403\b/.test(message)) return 403;
+  return undefined;
+}
+
 // Handle CopilotKit requests with token validation
 // Note: CopilotKit fetches runtime metadata from GET {runtimeUrl}/info during initialization.
 // That request may not include custom headers, so we must not require auth for /info.
@@ -146,7 +167,7 @@ app.use(
         agui_assistant: new HttpAgent({ 
           url: AGUI_BACKEND_URL,
           headers: authHeader ? { Authorization: authHeader } : undefined,
-        }),
+        }) as unknown as any,
       },
     });
 
@@ -197,4 +218,22 @@ app.listen(PORT, () => {
   if (process.env.NODE_ENV === "production") {
     console.log(`  - GET  /*             - React frontend`);
   }
+});
+
+// Error handler (must be last) - ensure auth failures surface cleanly
+app.use((err: unknown, req: Request, res: Response, _next: NextFunction) => {
+  if (res.headersSent) return;
+
+  const status = extractHttpStatus(err);
+  if (status === 401 || status === 403) {
+    res.status(status).json({
+      error: "Unauthorized",
+      message: "Authentication failed when calling the agent backend.",
+      status,
+    });
+    return;
+  }
+
+  console.error(`[${new Date().toISOString()}] ❌ Unhandled error:`, err);
+  res.status(500).json({ error: "Internal Server Error" });
 });
