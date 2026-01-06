@@ -37,7 +37,7 @@ Start all three components in separate terminals:
 
 ### 1. Python AG-UI Server
 ```bash
-cd src
+cd src/backend
 uv run python server.py
 ```
 Runs on http://127.0.0.1:8888
@@ -72,3 +72,7 @@ This script:
 - Shows color-coded logs from each service
 - Automatically clears ports if needed
 - Stops all services when you press Ctrl+C
+
+### UI
+
+![UI Screenshot](ui.png)
