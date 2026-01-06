@@ -1,7 +1,7 @@
 import { useMsal, useIsAuthenticated } from "@azure/msal-react";
 import { loginRequest, apiRequest } from "./authConfig";
 import { InteractionStatus, InteractionRequiredAuthError } from "@azure/msal-browser";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 // Hook to get access token for API calls
 // Following Microsoft best practices: acquire token on-demand, handle InteractionRequiredAuthError specifically
@@ -52,27 +52,6 @@ export function useAccessToken() {
       }
     }
   }, [instance, accounts, inProgress, isAcquiringToken, accessToken]);
-
-  // Acquire token on mount and when accounts change
-  useEffect(() => {
-    if (accounts.length > 0 && inProgress === InteractionStatus.None) {
-      acquireToken();
-    }
-  }, [accounts, inProgress]);
-
-  // Re-acquire token periodically (every 4 minutes) to ensure fresh tokens
-  // Access tokens typically expire after 1 hour, this ensures we get a new one before expiry
-  useEffect(() => {
-    if (accounts.length === 0) return;
-
-    const refreshInterval = setInterval(() => {
-      if (inProgress === InteractionStatus.None) {
-        acquireToken();
-      }
-    }, 4 * 60 * 1000); // 4 minutes
-
-    return () => clearInterval(refreshInterval);
-  }, [accounts, inProgress, acquireToken]);
 
   return { accessToken, acquireToken };
 }

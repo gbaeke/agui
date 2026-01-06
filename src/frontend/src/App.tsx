@@ -1,5 +1,6 @@
 import { CopilotKit, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
+import { useEffect } from "react";
 import "@copilotkit/react-ui/styles.css";
 import "./App.css";
 import { WeatherCard } from "./components/WeatherCard";
@@ -132,7 +133,15 @@ function UserHeader() {
 
 // Main chat component (only shown when authenticated)
 function AuthenticatedChat() {
-  const { accessToken } = useAccessToken();
+  const { accessToken, acquireToken } = useAccessToken();
+
+  // Acquire token on-demand when this authenticated experience is mounted.
+  // Avoid periodic refresh to reduce background traffic.
+  useEffect(() => {
+    if (!accessToken) {
+      acquireToken();
+    }
+  }, [accessToken, acquireToken]);
 
   // CopilotKit will call {runtimeUrl}/info on initialization. In practice that can happen
   // before we have an API access token available, which would fail auth and prevent
@@ -168,7 +177,6 @@ function AuthenticatedChat() {
 
   return (
     <CopilotKit
-      key={accessToken}
       runtimeUrl="/api/copilotkit" 
       agent="agui_assistant" 
       showDevConsole={false}
