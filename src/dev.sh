@@ -31,14 +31,46 @@ MAGENTA='\033[0;35m'
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 
+# Wait until a TCP port is listening (macOS-friendly via lsof)
+wait_for_port() {
+    local port=$1
+    local name=$2
+    local timeout_seconds=${3:-60}
+
+    echo "⏳ Waiting for ${name} to listen on port ${port}..."
+
+    local start
+    start=$(date +%s)
+
+    while true; do
+        if lsof -nP -iTCP:"${port}" -sTCP:LISTEN >/dev/null 2>&1; then
+            echo "✅ ${name} is listening on port ${port}"
+            echo ""
+            return 0
+        fi
+
+        local now
+        now=$(date +%s)
+        if (( now - start >= timeout_seconds )); then
+            echo "❌ Timed out waiting for ${name} to listen on port ${port} after ${timeout_seconds}s"
+            return 1
+        fi
+
+        sleep 0.2
+    done
+}
+
 # Start backend with unbuffered output and auto-reload
 (cd backend && PYTHONUNBUFFERED=1 uv run python -m uvicorn server:app --host 127.0.0.1 --port 8888 --reload 2>&1 | prefix_output "BACKEND" "$BLUE") &
+wait_for_port 8888 "BACKEND" 60
 
 # Start runtime
 (cd runtime && npm run dev 2>&1 | prefix_output "RUNTIME" "$MAGENTA") &
+wait_for_port 3001 "RUNTIME" 60
 
 # Start frontend
 (cd frontend && npm run dev 2>&1 | prefix_output "FRONTEND" "$GREEN") &
+wait_for_port 5173 "FRONTEND" 60
 
 # Wait for all background processes
 wait
