@@ -22,7 +22,6 @@ if not AZURE_OPENAI_DEPLOYMENT_NAME:
 
 # Cache durations
 JWKS_CACHE_DURATION = 86400  # 24 hours
-TOKEN_REPLAY_CACHE_MAX_SIZE = 10000  # Prevent unbounded growth
 
 # Server configuration
 SERVER_HOST = "127.0.0.1"

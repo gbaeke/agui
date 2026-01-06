@@ -97,7 +97,6 @@ When `ENTRA_TENANT_ID` and `ENTRA_AUDIENCE` are configured:
 - All endpoints (except `/health`) require a valid Bearer token
 - Tokens are validated against Microsoft Entra ID
 - JWKS keys are cached for 24 hours
-- Token replay attacks are prevented via JTI tracking
 
 When not configured:
 - Server runs without authentication (development mode)

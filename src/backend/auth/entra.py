@@ -5,7 +5,7 @@ import httpx
 import jwt
 from fastapi import HTTPException
 
-from config import ENTRA_TENANT_ID, JWKS_CACHE_DURATION, TOKEN_REPLAY_CACHE_MAX_SIZE
+from config import ENTRA_TENANT_ID, JWKS_CACHE_DURATION
 from utils import logger
 
 # Prefer PyJWT's built-in JWKS client for key selection. It handles fetching
@@ -19,11 +19,6 @@ _jwks_cache_time: float = 0
 # Cache PyJWKClient instance
 _jwk_client: PyJWKClient | None = None
 _jwk_client_tenant: str = ""
-
-# Token replay prevention cache (stores token IDs with expiration)
-# In production, use Redis or similar distributed cache
-_token_replay_cache: dict[str, float] = {}
-
 
 async def get_jwks_keys() -> dict:
     """Fetch and cache Microsoft's JWKS keys asynchronously."""
@@ -60,27 +55,6 @@ async def get_signing_key(token: str) -> str:
     return signing_key
 
 
-def _check_token_replay(jti: str, exp: float) -> None:
-    """Check and prevent token replay attacks."""
-    global _token_replay_cache
-    
-    current_time = time.time()
-    
-    # Clean up expired tokens from cache to prevent unbounded growth
-    if len(_token_replay_cache) > TOKEN_REPLAY_CACHE_MAX_SIZE:
-        _token_replay_cache = {
-            k: v for k, v in _token_replay_cache.items() 
-            if v > current_time
-        }
-    
-    # Check if token was already used
-    if jti in _token_replay_cache:
-        raise ValueError("Token has already been used (replay detected)")
-    
-    # Add token to cache with its expiration time
-    _token_replay_cache[jti] = exp
-
-
 async def validate_token(token: str) -> dict:
     """Validate an Entra ID token and return the claims."""
     from config import ENTRA_AUDIENCE, ENTRA_TENANT_ID
@@ -113,12 +87,6 @@ async def validate_token(token: str) -> dict:
             nbf = claims["nbf"]
             if time.time() < nbf:
                 raise ValueError("Token not yet valid (nbf claim)")
-        
-        # Token replay protection using jti (JWT ID)
-        jti = claims.get("jti")
-        if jti:
-            exp = claims.get("exp", time.time() + 3600)
-            _check_token_replay(jti, exp)
         
         logger.info(f"✅ Token validated for user: {claims.get('preferred_username', claims.get('sub', 'unknown'))}")
         return claims

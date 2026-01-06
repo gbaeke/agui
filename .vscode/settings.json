@@ -6,10 +6,25 @@
   "python.autoComplete.extraPaths": [
     "${workspaceFolder}/src/backend"
   ],
+  "files.exclude": {
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/build/**": true
+  },
   "search.exclude": {
     "**/node_modules": true
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.tsserver.watchOptions": {
+    "excludeDirectories": [
+      "**/node_modules",
+      "**/dist",
+      "**/build"
+    ]
+  },
   "js/ts.implicitProjectConfig.checkJs": false
 }
