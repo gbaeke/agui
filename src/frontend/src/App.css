@@ -6,6 +6,114 @@
   flex-direction: column;
 }
 
+/* Authenticated layout: settings left, chat right */
+.app-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+
+.left-panel {
+  width: 320px;
+  padding: 16px;
+  border-right: 1px solid #eef2f7;
+  background: linear-gradient(180deg, #fafafa 0%, #ffffff 100%);
+  overflow: auto;
+}
+
+.right-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    flex-direction: column;
+  }
+  .left-panel {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #eef2f7;
+  }
+}
+
+/* Preferences panel */
+.prefs-card {
+  border: 1px solid #eef2f7;
+  border-radius: 14px;
+  background: white;
+  padding: 14px;
+}
+
+.prefs-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 14px;
+}
+
+.prefs-title {
+  font-weight: 700;
+  color: #111827;
+  font-size: 14px;
+}
+
+.prefs-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.prefs-group {
+  margin-bottom: 14px;
+}
+
+.prefs-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.segmented {
+  display: flex;
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f9fafb;
+}
+
+.seg {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.seg:hover {
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.seg.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.prefs-hint {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
 .main-content {
   min-height: 100vh;
   display: flex;

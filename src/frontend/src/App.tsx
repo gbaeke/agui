@@ -1,4 +1,4 @@
-import { CopilotKit, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
+import { CopilotKit, useCoAgent, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
 import { CopilotChat } from "@copilotkit/react-ui";
 import { useEffect, useState } from "react";
 import "@copilotkit/react-ui/styles.css";
@@ -6,6 +6,97 @@ import "./App.css";
 import { WeatherCard } from "./components/WeatherCard";
 import { ClockCard } from "./components/ClockCard";
 import { useAuth, useAccessToken } from "./useAuth";
+
+type AgentPreferences = {
+  language?: "en" | "nl";
+  style?: "regular" | "pirate";
+};
+
+function PreferencesPanel() {
+  const { state, setState } = useCoAgent<AgentPreferences>({
+    name: "agui_assistant",
+    initialState: { language: "en", style: "regular" },
+  });
+
+  const language: "en" | "nl" = state?.language === "nl" ? "nl" : "en";
+  const style: "regular" | "pirate" = state?.style === "pirate" ? "pirate" : "regular";
+
+  // Be defensive: if state exists but lacks keys, fill them.
+  useEffect(() => {
+    const next: AgentPreferences = { ...(state ?? {}) };
+    let changed = false;
+    if (next.language !== "en" && next.language !== "nl") {
+      next.language = "en";
+      changed = true;
+    }
+    if (next.style !== "regular" && next.style !== "pirate") {
+      next.style = "regular";
+      changed = true;
+    }
+    if (changed) {
+      setState({ ...(state ?? {}), ...next });
+    }
+  }, [state, setState]);
+
+  const setPreference = (partial: AgentPreferences) => {
+    setState({ ...(state ?? {}), ...partial });
+  };
+
+  return (
+    <div className="prefs-card">
+      <div className="prefs-header">
+        <div className="prefs-title">Preferences</div>
+        <div className="prefs-subtitle">Applied to every reply</div>
+      </div>
+
+      <div className="prefs-group">
+        <div className="prefs-label">Style</div>
+        <div className="segmented" role="group" aria-label="Style">
+          <button
+            type="button"
+            className={style === "regular" ? "seg active" : "seg"}
+            onClick={() => setPreference({ style: "regular" })}
+          >
+            Regular
+          </button>
+          <button
+            type="button"
+            className={style === "pirate" ? "seg active" : "seg"}
+            onClick={() => setPreference({ style: "pirate" })}
+          >
+            Pirate
+          </button>
+        </div>
+      </div>
+
+      <div className="prefs-group">
+        <div className="prefs-label">Language</div>
+        <div className="segmented" role="group" aria-label="Language">
+          <button
+            type="button"
+            className={language === "en" ? "seg active" : "seg"}
+            onClick={() => setPreference({ language: "en" })}
+          >
+            EN
+          </button>
+          <button
+            type="button"
+            className={language === "nl" ? "seg active" : "seg"}
+            onClick={() => setPreference({ language: "nl" })}
+          >
+            NL
+          </button>
+        </div>
+      </div>
+
+      <div className="prefs-hint">
+        {language === "nl" ? "De assistent antwoordt in het Nederlands." : "The assistant replies in English."}
+        {" "}
+        {style === "pirate" ? "(Pirate style)" : ""}
+      </div>
+    </div>
+  );
+}
 
 // Login screen component
 function LoginScreen() {
@@ -272,7 +363,7 @@ function AuthenticatedChat() {
       }}>
         <div style={{
           width: "100%",
-          maxWidth: "700px",
+          maxWidth: "1100px",
           height: "90vh",
           borderRadius: "16px",
           overflow: "hidden",
@@ -282,21 +373,20 @@ function AuthenticatedChat() {
           background: "white",
         }}>
           <UserHeader />
-          <div style={{
-            flex: 1,
-            minHeight: 0,
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-          }}>
-            <ToolRenderers />
-            <CopilotChat
-              className="chat-container"
-              labels={{
-                title: "AG-UI Assistant",
-                initial: "Hi! 👋 I'm your AI assistant powered by AG-UI and Microsoft Agent Framework.\n\nI can help you with:\n• Weather information for any location\n• Current date and time\n• Mathematical calculations\n\nTry asking me something!",
-              }}
-            />
+          <div className="app-shell">
+            <div className="left-panel">
+              <PreferencesPanel />
+            </div>
+            <div className="right-panel">
+              <ToolRenderers />
+              <CopilotChat
+                className="chat-container"
+                labels={{
+                  title: "AG-UI Assistant",
+                  initial: "Hi! 👋 I'm your AI assistant powered by AG-UI and Microsoft Agent Framework.\n\nI can help you with:\n• Weather information for any location\n• Current date and time\n• Mathematical calculations\n\nTry asking me something!",
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
