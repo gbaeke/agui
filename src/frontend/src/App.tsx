@@ -14,6 +14,7 @@ import "./App.css";
 import { WeatherCard } from "./components/WeatherCard";
 import { ClockCard } from "./components/ClockCard";
 import { useAuth, useAccessToken } from "./useAuth";
+import { authEnabled } from "./authConfig";
 
 const AGENT_ID = "agui_assistant";
 
@@ -213,7 +214,7 @@ function UserHeader() {
           <div style={{ fontSize: "12px", opacity: 0.8 }}>{username}</div>
         </div>
       </div>
-      <button
+      {authEnabled && <button
         onClick={logout}
         style={{
           background: "rgba(255,255,255,0.2)",
@@ -229,7 +230,7 @@ function UserHeader() {
         onMouseOut={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
       >
         Sign out
-      </button>
+      </button>}
     </div>
   );
 }
@@ -243,7 +244,7 @@ function AuthenticatedChat() {
   // Acquire token on-demand when this authenticated experience is mounted.
   // Avoid periodic refresh to reduce background traffic.
   useEffect(() => {
-    if (!accessToken) {
+    if (authEnabled && !accessToken) {
       acquireToken();
     }
   }, [accessToken, acquireToken]);
@@ -317,7 +318,7 @@ function AuthenticatedChat() {
   // CopilotKit will call {runtimeUrl}/info on initialization. In practice that can happen
   // before we have an API access token available, which would fail auth and prevent
   // agent discovery. Keep the UI simple: wait until we have a token.
-  if (!accessToken) {
+  if (authEnabled && !accessToken) {
     return (
       <div style={{
         display: "flex",
@@ -344,7 +345,7 @@ function AuthenticatedChat() {
   }
 
   // Build headers with the access token
-  const headers = { Authorization: `Bearer ${accessToken}` };
+  const headers: Record<string, string> = authEnabled ? { Authorization: `Bearer ${accessToken}` } : {};
 
   return (
     <CopilotKit
@@ -407,6 +408,11 @@ function AuthenticatedChat() {
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Skip the login flow entirely when auth is not configured
+  if (!authEnabled) {
+    return <AuthenticatedChat />;
+  }
 
   // Show loading state
   if (isLoading) {
