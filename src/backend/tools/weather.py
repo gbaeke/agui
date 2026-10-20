@@ -2,12 +2,12 @@
 
 import json
 import httpx
-from agent_framework import ai_function
+from agent_framework import tool
 
 from utils import logger
 
 
-@ai_function(description="Get the current weather for a location")
+@tool(description="Get the current weather for a location")
 def get_weather(location: str) -> str:
     """Get real weather information for a location using Open-Meteo API."""
     try:

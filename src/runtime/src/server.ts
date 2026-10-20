@@ -9,11 +9,8 @@ import "dotenv/config";
 import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import {
-  CopilotRuntime,
-  ExperimentalEmptyAdapter,
-  copilotRuntimeNodeHttpEndpoint,
-} from "@copilotkit/runtime";
+import { CopilotRuntime } from "@copilotkit/runtime/v2";
+import { createCopilotExpressHandler } from "@copilotkit/runtime/v2/express";
 import { HttpAgent } from "@ag-ui/client";
 import jwt from "jsonwebtoken";
 import jwksRsa from "jwks-rsa";
@@ -24,9 +21,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CopilotKit sends JSON payloads to the runtime endpoint. Parsing JSON here ensures
-// req.body is available even if the request stream is already ended/consumed, which
-// allows @copilotkit/runtime to safely reconstruct the Request body.
+// CopilotKit sends JSON payloads to the runtime endpoint. The v2 Express handler
+// reconstructs the Request body from req.body when it has already been parsed.
 app.use(express.json({ limit: "10mb" }));
 
 // AG-UI backend URL (Python server)
@@ -106,9 +102,6 @@ async function validateToken(req: Request, res: Response, next: NextFunction): P
   }
 }
 
-// Create the service adapter (empty since we're using AG-UI agent)
-const serviceAdapter = new ExperimentalEmptyAdapter();
-
 function extractHttpStatus(error: unknown): number | undefined {
   const err = error as any;
   const candidates = [
@@ -130,6 +123,32 @@ function extractHttpStatus(error: unknown): number | undefined {
   return undefined;
 }
 
+// Forward the caller's Authorization header to the Python backend.
+// Be defensive: only forward the first value if a list is present.
+function forwardedAuthHeader(request: globalThis.Request): string | undefined {
+  const value = request.headers.get("authorization");
+  return value ? value.split(",", 1)[0].trim() : undefined;
+}
+
+// Agents are created per request so each run carries the caller's token.
+const runtime = new CopilotRuntime({
+  agents: ({ request }) => {
+    const authHeader = forwardedAuthHeader(request);
+    return {
+      agui_assistant: new HttpAgent({
+        url: AGUI_BACKEND_URL,
+        headers: authHeader ? { Authorization: authHeader } : undefined,
+      }),
+    };
+  },
+});
+
+const copilotHandler = createCopilotExpressHandler({
+  runtime,
+  basePath: "/",
+  cors: false,
+});
+
 // Handle CopilotKit requests with token validation
 // Note: CopilotKit fetches runtime metadata from GET {runtimeUrl}/info during initialization.
 // That request may not include custom headers, so we must not require auth for /info.
@@ -145,41 +164,13 @@ app.use(
     }
     validateToken(req, res, next).catch(next);
   },
-  (req, res, next) => {
-  console.log(
-    `[${new Date().toISOString()}] Incoming ${req.method} request to ${req.originalUrl || req.url}`,
-  );
-  
-  // Get the Authorization header to forward to the backend
-  const rawAuthHeader = req.headers.authorization;
-  const authHeader = (() => {
-    if (!rawAuthHeader) return undefined;
-    const value = Array.isArray(rawAuthHeader) ? rawAuthHeader[0] : rawAuthHeader;
-    // Be defensive: only forward the first value if a list is present.
-    return value.split(",", 1)[0].trim();
-  })();
-  
-  (async () => {
-    // Create the CopilotRuntime inside the handler (per the docs)
-    // Forward the Authorization header to the Python backend
-    const runtime = new CopilotRuntime({
-      agents: {
-        agui_assistant: new HttpAgent({ 
-          url: AGUI_BACKEND_URL,
-          headers: authHeader ? { Authorization: authHeader } : undefined,
-        }) as unknown as any,
-      },
-    });
-
-    const handler = copilotRuntimeNodeHttpEndpoint({
-      endpoint: "/api/copilotkit",
-      runtime,
-      serviceAdapter,
-    });
-
-    return handler(req, res);
-  })().catch(next);
-  }
+  (req, _res, next) => {
+    console.log(
+      `[${new Date().toISOString()}] Incoming ${req.method} request to ${req.originalUrl || req.url}`,
+    );
+    next();
+  },
+  copilotHandler,
 );
 
 // Health check

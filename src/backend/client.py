@@ -4,7 +4,7 @@ import asyncio
 import os
 
 from dotenv import load_dotenv
-from agent_framework import ChatAgent
+from agent_framework import Agent
 from agent_framework_ag_ui import AGUIChatClient
 
 # Load environment variables
@@ -29,14 +29,14 @@ async def run_client():
     chat_client = AGUIChatClient(endpoint=server_url)
 
     # Create agent with the chat client
-    agent = ChatAgent(
+    agent = Agent(
         name="ClientAgent",
-        chat_client=chat_client,
+        client=chat_client,
         instructions="You are a helpful assistant.",
     )
 
-    # Get a thread for conversation continuity
-    thread = agent.get_new_thread()
+    # Get a session for conversation continuity
+    session = agent.create_session()
 
     try:
         while True:
@@ -52,7 +52,7 @@ async def run_client():
 
             # Stream the agent response
             print("\nAssistant: ", end="", flush=True)
-            async for update in agent.run_stream(message, thread=thread):
+            async for update in agent.run(message, session=session, stream=True):
                 # Handle text output
                 if update.text:
                     print(f"{CYAN}{update.text}{RESET}", end="", flush=True)

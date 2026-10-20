@@ -1,5 +1,8 @@
 import { Configuration, LogLevel } from "@azure/msal-browser";
 
+// Auth is disabled when no frontend client ID is configured (matches backend/runtime behavior)
+export const authEnabled = Boolean(import.meta.env.VITE_ENTRA_CLIENT_ID);
+
 // MSAL configuration
 export const msalConfig: Configuration = {
   auth: {

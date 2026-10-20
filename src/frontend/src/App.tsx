@@ -1,11 +1,22 @@
-import { CopilotKit, useCoAgent, useFrontendTool, useHumanInTheLoop, useRenderToolCall } from "@copilotkit/react-core";
-import { CopilotChat } from "@copilotkit/react-ui";
+import {
+  CopilotChat,
+  CopilotKit,
+  UseAgentUpdate,
+  useAgent,
+  useFrontendTool,
+  useHumanInTheLoop,
+  useRenderTool,
+} from "@copilotkit/react-core/v2";
 import { useEffect, useState } from "react";
-import "@copilotkit/react-ui/styles.css";
+import { z } from "zod";
+import "@copilotkit/react-core/v2/styles.css";
 import "./App.css";
 import { WeatherCard } from "./components/WeatherCard";
 import { ClockCard } from "./components/ClockCard";
 import { useAuth, useAccessToken } from "./useAuth";
+import { authEnabled } from "./authConfig";
+
+const AGENT_ID = "agui_assistant";
 
 type AgentPreferences = {
   language?: "en" | "nl";
@@ -13,15 +24,17 @@ type AgentPreferences = {
 };
 
 function PreferencesPanel() {
-  const { state, setState } = useCoAgent<AgentPreferences>({
-    name: "agui_assistant",
-    initialState: { language: "en", style: "regular" },
+  const { agent } = useAgent({
+    agentId: AGENT_ID,
+    updates: [UseAgentUpdate.OnStateChanged],
   });
+  const state = agent.state as AgentPreferences | undefined;
+  const setState = (next: AgentPreferences) => agent.setState(next);
 
   const language: "en" | "nl" = state?.language === "nl" ? "nl" : "en";
   const style: "regular" | "pirate" = state?.style === "pirate" ? "pirate" : "regular";
 
-  // Be defensive: if state exists but lacks keys, fill them.
+  // Fill in defaults when state is empty or lacks keys.
   useEffect(() => {
     const next: AgentPreferences = { ...(state ?? {}) };
     let changed = false;
@@ -36,7 +49,7 @@ function PreferencesPanel() {
     if (changed) {
       setState({ ...(state ?? {}), ...next });
     }
-  }, [state, setState]);
+  }, [agent, state]);
 
   const setPreference = (partial: AgentPreferences) => {
     setState({ ...(state ?? {}), ...partial });
@@ -201,7 +214,7 @@ function UserHeader() {
           <div style={{ fontSize: "12px", opacity: 0.8 }}>{username}</div>
         </div>
       </div>
-      <button
+      {authEnabled && <button
         onClick={logout}
         style={{
           background: "rgba(255,255,255,0.2)",
@@ -217,7 +230,7 @@ function UserHeader() {
         onMouseOut={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
       >
         Sign out
-      </button>
+      </button>}
     </div>
   );
 }
@@ -231,7 +244,7 @@ function AuthenticatedChat() {
   // Acquire token on-demand when this authenticated experience is mounted.
   // Avoid periodic refresh to reduce background traffic.
   useEffect(() => {
-    if (!accessToken) {
+    if (authEnabled && !accessToken) {
       acquireToken();
     }
   }, [accessToken, acquireToken]);
@@ -305,7 +318,7 @@ function AuthenticatedChat() {
   // CopilotKit will call {runtimeUrl}/info on initialization. In practice that can happen
   // before we have an API access token available, which would fail auth and prevent
   // agent discovery. Keep the UI simple: wait until we have a token.
-  if (!accessToken) {
+  if (authEnabled && !accessToken) {
     return (
       <div style={{
         display: "flex",
@@ -332,19 +345,17 @@ function AuthenticatedChat() {
   }
 
   // Build headers with the access token
-  const headers = { Authorization: `Bearer ${accessToken}` };
+  const headers: Record<string, string> = authEnabled ? { Authorization: `Bearer ${accessToken}` } : {};
 
   return (
     <CopilotKit
       runtimeUrl="/api/copilotkit" 
-      agent="agui_assistant" 
+      agentId={AGENT_ID}
       showDevConsole={false}
+      enableInspector={false}
       headers={headers}
-      onError={(errorEvent: any) => {
-        const message =
-          (typeof errorEvent?.error?.message === "string" && errorEvent.error.message) ||
-          (typeof errorEvent?.error === "string" && errorEvent.error) ||
-          "";
+      onError={(errorEvent) => {
+        const message = errorEvent.error?.message ?? "";
 
         // Best-effort detection: if the runtime/backend responds 401/403, CopilotKit will surface an error.
         if (/\b401\b/.test(message) || /\b403\b/.test(message) || /unauthorized/i.test(message)) {
@@ -381,9 +392,10 @@ function AuthenticatedChat() {
               <ToolRenderers />
               <CopilotChat
                 className="chat-container"
+                agentId={AGENT_ID}
                 labels={{
-                  title: "AG-UI Assistant",
-                  initial: "Hi! 👋 I'm your AI assistant powered by AG-UI and Microsoft Agent Framework.\n\nI can help you with:\n• Weather information for any location\n• Current date and time\n• Mathematical calculations\n\nTry asking me something!",
+                  modalHeaderTitle: "AG-UI Assistant",
+                  welcomeMessageText: "Hi! 👋 I'm your AI assistant powered by AG-UI and Microsoft Agent Framework.\n\nI can help you with:\n• Weather information for any location\n• Current date and time\n• Mathematical calculations\n\nTry asking me something!",
                 }}
               />
             </div>
@@ -396,6 +408,11 @@ function AuthenticatedChat() {
 
 function App() {
   const { isAuthenticated, isLoading } = useAuth();
+
+  // Skip the login flow entirely when auth is not configured
+  if (!authEnabled) {
+    return <AuthenticatedChat />;
+  }
 
   // Show loading state
   if (isLoading) {
@@ -428,10 +445,10 @@ function ToolRenderers() {
   useFrontendTool({
     name: "set_background_color",
     description: "Set the background color of the web app (CSS color string).",
-    parameters: [
-      { name: "color", type: "string", description: "CSS color value (e.g., '#111827', 'white', 'rgb(0,0,0)')", required: true },
-    ],
-    handler: ({ color }) => {
+    parameters: z.object({
+      color: z.string().describe("CSS color value (e.g., '#111827', 'white', 'rgb(0,0,0)')"),
+    }),
+    handler: async ({ color }) => {
       const safeColor = typeof color === "string" ? color.trim() : "";
       if (!safeColor) {
         return { ok: false, error: "Missing color" };
@@ -446,9 +463,9 @@ function ToolRenderers() {
   useHumanInTheLoop({
     name: "approve_weather_request",
     description: "Ask the user to approve fetching weather for a given location before calling get_weather.",
-    parameters: [
-      { name: "location", type: "string", description: "The location to fetch weather for", required: true },
-    ],
+    parameters: z.object({
+      location: z.string().describe("The location to fetch weather for"),
+    }),
     render: ({ args, respond }) => {
       if (!respond) return <></>;
 
@@ -502,14 +519,14 @@ function ToolRenderers() {
   });
 
   // Render weather tool calls with nice weather card
-  useRenderToolCall({
+  useRenderTool({
     name: "get_weather",
-    parameters: [
-      { name: "location", type: "string", description: "The location to get weather for" }
-    ],
-    render: ({ status, args, result }) => (
+    parameters: z.object({
+      location: z.string().describe("The location to get weather for"),
+    }),
+    render: ({ status, parameters, result }) => (
       <WeatherCard
-        location={args.location || "..."}
+        location={parameters.location || "..."}
         status={status}
         result={result}
       />
@@ -517,9 +534,9 @@ function ToolRenderers() {
   });
 
   // Render time tool calls with clock card
-  useRenderToolCall({
+  useRenderTool({
     name: "get_current_time",
-    parameters: [],
+    parameters: z.object({}),
     render: ({ status, result }) => (
       <ClockCard
         status={status}
@@ -529,12 +546,12 @@ function ToolRenderers() {
   });
 
   // Render calculator tool calls
-  useRenderToolCall({
+  useRenderTool({
     name: "calculate",
-    parameters: [
-      { name: "expression", type: "string", description: "The math expression to calculate" }
-    ],
-    render: ({ status, args, result }) => (
+    parameters: z.object({
+      expression: z.string().describe("The math expression to calculate"),
+    }),
+    render: ({ status, parameters, result }) => (
       <div className="tool-card calc-tool">
         <div className="tool-header">
           <span className="tool-icon">🔢</span>
@@ -544,7 +561,7 @@ function ToolRenderers() {
           </span>
         </div>
         <div className="tool-body">
-          <p><strong>Expression:</strong> <code>{args.expression || "..."}</code></p>
+          <p><strong>Expression:</strong> <code>{parameters.expression || "..."}</code></p>
           {status !== "complete" && <p className="tool-loading">Calculating...</p>}
           {status === "complete" && result && (
             <p className="tool-result"><strong>Result:</strong> {String(result)}</p>
@@ -555,12 +572,12 @@ function ToolRenderers() {
   });
 
   // Render bedtime story sub-agent invocation
-  useRenderToolCall({
+  useRenderTool({
     name: "tell_bedtime_story",
-    parameters: [
-      { name: "theme", type: "string", description: "The theme for the bedtime story" }
-    ],
-    render: ({ status, args, result }) => (
+    parameters: z.object({
+      theme: z.string().describe("The theme for the bedtime story"),
+    }),
+    render: ({ status, parameters, result }) => (
       <div className="tool-card story-agent">
         <div className="tool-header">
           <span className="tool-icon">🌙</span>
@@ -570,7 +587,7 @@ function ToolRenderers() {
           </span>
         </div>
         <div className="tool-body">
-          <p><strong>Theme:</strong> {args.theme || "..."}</p>
+          <p><strong>Theme:</strong> {parameters.theme || "..."}</p>
           {status !== "complete" && (
             <div className="agent-thinking">
               <span className="pulse">✨</span>
