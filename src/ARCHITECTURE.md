@@ -71,7 +71,7 @@ The `HttpAgent` from `@ag-ui/client` knows how to speak the **AG-UI protocol** -
 │  FastAPI + Agent Framework              │
 │                                         │
 │  1. Receives AG-UI formatted request    │
-│  2. Passes to ChatAgent                 │
+│  2. Passes to Agent                     │
 │  3. Agent calls Azure OpenAI            │
 │  4. LLM decides to use get_weather tool │
 │  5. Tool executes: get_weather("Paris") │
@@ -91,9 +91,9 @@ The `HttpAgent` from `@ag-ui/client` knows how to speak the **AG-UI protocol** -
 add_agent_framework_fastapi_endpoint(app, agent, "/")
 
 # The agent with tools
-agent = ChatAgent(
+agent = Agent(
     name="AGUIAssistant",
-    chat_client=chat_client,  # → Azure OpenAI
+    client=chat_client,  # → Azure OpenAI
     tools=[get_weather, get_current_time, calculate],
 )
 ```
@@ -126,7 +126,7 @@ agent = ChatAgent(
 
 ```
 ┌─────────────────────────────────────────┐
-│  @ai_function decorator                 │
+│  @tool decorator                        │
 │                                         │
 │  def get_weather(location: str):        │
 │      # Simulated weather                │
@@ -188,7 +188,7 @@ React Frontend (5173)
 | **CopilotKit Runtime** | Routes to correct agent | CopilotKit → AG-UI |
 | **HttpAgent** | Speaks AG-UI protocol | AG-UI (HTTP + SSE) |
 | **FastAPI + Agent Framework** | Hosts agent, executes tools | AG-UI events |
-| **ChatAgent** | Orchestrates LLM + tools | Azure OpenAI API |
+| **Agent** | Orchestrates LLM + tools | Azure OpenAI API |
 
 ---
 

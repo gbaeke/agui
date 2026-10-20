@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from agent_framework import ai_function
+from agent_framework import tool
 
 
-@ai_function(description="Set the preferred response language for this conversation")
+@tool(description="Set the preferred response language for this conversation")
 def set_language(language: Literal["en", "nl"]) -> str:
     """Set the preferred language.
 
@@ -21,7 +21,7 @@ def set_language(language: Literal["en", "nl"]) -> str:
     return "Language updated."
 
 
-@ai_function(description="Set the preferred response style for this conversation")
+@tool(description="Set the preferred response style for this conversation")
 def set_style(style: Literal["regular", "pirate"]) -> str:
     """Set the preferred style.
 

@@ -47,7 +47,7 @@ backend/
 - **models.py**: Security schemes and token caches
 
 ### `tools/` - Agent Tools
-Each tool is an `@ai_function` decorated function:
+Each tool is an `@tool` decorated function:
 - **weather.py**: Geocodes location and fetches weather from Open-Meteo API
 - **time.py**: Returns current UTC time in ISO format
 - **calculator.py**: Safely evaluates math expressions
@@ -112,6 +112,6 @@ The main agent (`AGUIAssistant`) is configured to:
 ## Adding New Tools
 
 1. Create a new file in `tools/` (e.g., `mytool.py`)
-2. Define an `@ai_function` decorated function
+2. Define an `@tool` decorated function
 3. Import and register in `agents/main_agent.py`
 4. Tool will automatically appear in the agent's capabilities

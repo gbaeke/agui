@@ -5,7 +5,9 @@ description = "AG-UI Server and Client Demo with Microsoft Agent Framework"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "agent-framework-ag-ui",
+    "agent-framework-ag-ui>=1.6.0",
+    "agent-framework-core>=1.22.0",
+    "agent-framework-openai>=1.17.0",
     "azure-identity",
     "httpx>=0.28.1",
     "pyjwt[crypto]>=2.10.1",

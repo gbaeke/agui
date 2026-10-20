@@ -10,7 +10,7 @@ from utils import logger
 @function_middleware
 async def tool_logging_middleware(
     context: FunctionInvocationContext,
-    next: Callable[[FunctionInvocationContext], Awaitable[None]],
+    call_next: Callable[[], Awaitable[None]],
 ) -> None:
     """Middleware that logs tool calls with timing information."""
     function_name = context.function.name
@@ -21,14 +21,18 @@ async def tool_logging_middleware(
     
     start_time = time.time()
     
-    await next(context)
+    await call_next()
     
     duration = time.time() - start_time
     
     logger.info(f"Tool call completed: {function_name} (took {duration:.3f}s)")
     if context.result is not None:
         # Truncate long results for logging
-        result_str = str(context.result)
+        result = context.result
+        if isinstance(result, list):
+            # Tool results are a list of Content items; log their text.
+            result = " ".join(str(getattr(item, "text", None) or item) for item in result)
+        result_str = str(result)
         if len(result_str) > 200:
             result_str = result_str[:200] + "..."
         logger.info(f"  Result: {result_str}")

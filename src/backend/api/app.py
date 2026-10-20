@@ -65,8 +65,9 @@ wrapped_agent = AgentFrameworkAgent(
 async def agent_endpoint(request: Request):  # type: ignore[misc]
     input_data = await request.json()
 
-    run_id = input_data.get("run_id", "no-run-id")
-    thread_id = input_data.get("thread_id", "no-thread-id")
+    # AG-UI clients send camelCase keys; accept snake_case too.
+    run_id = input_data.get("runId") or input_data.get("run_id") or "no-run-id"
+    thread_id = input_data.get("threadId") or input_data.get("thread_id") or "no-thread-id"
     incoming_state = input_data.get("state") or {}
     if not isinstance(incoming_state, dict):
         incoming_state = {}
@@ -84,7 +85,7 @@ async def agent_endpoint(request: Request):  # type: ignore[misc]
         encoder = EventEncoder()
         current_state: dict[str, Any] = dict(incoming_state)
 
-        async for event in wrapped_agent.run_agent(input_data):
+        async for event in wrapped_agent.run(input_data):
             # Track state snapshots as they stream.
             snapshot = getattr(event, "snapshot", None)
             if isinstance(snapshot, dict):

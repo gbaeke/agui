@@ -1,9 +1,9 @@
 """Calculator tool for mathematical expressions."""
 
-from agent_framework import ai_function
+from agent_framework import tool
 
 
-@ai_function(description="Calculate a mathematical expression")
+@tool(description="Calculate a mathematical expression")
 def calculate(expression: str) -> str:
     """Safely evaluate a mathematical expression."""
     try:
